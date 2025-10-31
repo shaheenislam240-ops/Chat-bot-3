@@ -1,136 +1,136 @@
+const fs = require("fs-extra");
+const path = require("path");
+const axios = require("axios");
+const Canvas = require("canvas");
+
 module.exports.config = {
   name: "joinnoti",
+  version: "1.0.3",
+  credits: "Maria (rX Modded) + Updated by rX Abdullah",
+  description: "Welcome new member with profile pic and random background",
   eventType: ["log:subscribe"],
-  version: "1.0.2",
-  credits: "SHAHADAT SAHU",
-  description: "Welcome message with optional image/video",
   dependencies: {
-    "fs-extra": "",
-    "path": ""
+    "canvas": "",
+    "axios": "",
+    "fs-extra": ""
   }
 };
 
-module.exports.onLoad = function () {
-  const { existsSync, mkdirSync } = global.nodemodule["fs-extra"];
-  const { join } = global.nodemodule["path"];
-  const paths = [
-    join(__dirname, "cache", "joinGif"),
-    join(__dirname, "cache", "randomgif")
+module.exports.run = async function({ api, event, Users }) {
+  const { threadID, logMessageData } = event;
+  const added = logMessageData.addedParticipants?.[0];
+  if (!added) return;
+
+  const userID = added.userFbId;
+  const userName = added.fullName;
+
+  const threadInfo = await api.getThreadInfo(threadID);
+  const groupName = threadInfo.threadName;
+  const memberCount = threadInfo.participantIDs.length;
+
+  const adderID = event.author;
+  const adderName = (await Users.getNameUser(adderID)) || "Unknown";
+
+  const now = new Date();
+const dateString = now.toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka" }); // DD/MM/YYYY
+const timeString = now.toLocaleTimeString("en-US", { hour12: true, timeZone: "Asia/Dhaka" }); // HH:MM AM/PM
+
+
+  // Random background selection
+  const bgURLs = [
+    "https://i.postimg.cc/904gjPHn/images-11.jpg",
+    "https://i.postimg.cc/8k3nmYhQ/images-10.jpg",
+    "https://i.postimg.cc/KjdqcKZv/images-9.jpg",
+    "https://i.postimg.cc/28Z9cxwq/images-8.jpg"
   ];
-  for (const path of paths) {
-    if (!existsSync(path)) mkdirSync(path, { recursive: true });
-  }
+  const bgURL = bgURLs[Math.floor(Math.random() * bgURLs.length)];
+
+  const avatarURL = `https://graph.facebook.com/${userID}/picture?width=512&height=512&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662`;
+
+  const cacheDir = path.join(__dirname, "cache");
+  fs.ensureDirSync(cacheDir);
+
+  const bgPath = path.join(cacheDir, `bg_${userID}.jpg`);
+  const avatarPath = path.join(cacheDir, `avt_${userID}.png`);
+  const outPath = path.join(cacheDir, `welcome_${userID}.png`);
+
+  try {
+    // Download random background
+    const bgImg = (await axios.get(bgURL, { responseType: "arraybuffer" })).data;
+    fs.writeFileSync(bgPath, Buffer.from(bgImg));
+
+    // Download avatar
+    const avatarImg = (await axios.get(avatarURL, { responseType: "arraybuffer" })).data;
+    fs.writeFileSync(avatarPath, Buffer.from(avatarImg));
+
+    // Create canvas
+    const canvas = Canvas.createCanvas(800, 500);
+    const ctx = canvas.getContext("2d");
+
+    const background = await Canvas.loadImage(bgPath);
+    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+
+    const avatarSize = 180;
+    const avatarX = (canvas.width - avatarSize) / 2;
+    const avatarY = 100;
+
+    // White circular frame
+    ctx.beginPath();
+    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 8, 0, Math.PI * 2, false);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+
+    // Load avatar
+    const avatar = await Canvas.loadImage(avatarPath);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2, true);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+    ctx.restore();
+
+    // Draw text lines
+    ctx.textAlign = "center";
+
+    ctx.font = "bold 36px Arial";
+    ctx.fillStyle = "#FFB6C1";
+    ctx.fillText(userName, canvas.width / 2, avatarY + avatarSize + 50);
+
+    ctx.font = "bold 30px Arial";
+    ctx.fillStyle = "#00FFFF";
+    ctx.fillText(groupName, canvas.width / 2, avatarY + avatarSize + 90);
+
+    ctx.font = "bold 28px Arial";
+    ctx.fillStyle = "#FFFF00";
+    ctx.fillText(`You are the ${memberCount}th member of this group`, canvas.width / 2, avatarY + avatarSize + 130);
+
+    // Save final image
+    const finalBuffer = canvas.toBuffer();
+    fs.writeFileSync(outPath, finalBuffer);
+
+    const message = {
+  body: `‎🌸 ʜᴇʟʟᴏ @${userName}
+🎀 ᴡᴇʟᴄᴏᴍᴇ ᴛᴏ ᴏᴜʀ ɢʀᴏᴜᴘ — ${groupName}
+📌 ʏᴏᴜ'ʀᴇ ᴛʜᴇ ${memberCount} ᴍᴇᴍʙᴇʀ ᴏɴ ᴛʜɪꜱ ɢʀᴏᴜᴘ!
+💬 ғᴇᴇʟ ғʀᴇᴇ ᴛᴏ ᴄʜᴀᴛ, ᴄᴏɴɴᴇᴄᴛ ᴀɴᴅ ʜᴀᴠᴇ ꜰᴜɴ ʜᴇʀᴇ!
+ᰔ 𝐒𝐚𝐬𝐮𝐤𝐞 𝐁𝐨𝐭
+━━━━━━━━━━━━━━━━
+📅 ${new Date().toLocaleTimeString("en-US", { hour12: true, timeZone: "Asia/Dhaka" })} - ${new Date().toLocaleDateString("en-GB")} - ${new Date().toLocaleDateString("en-US", { weekday: "long" })}`,
+  mentions: [
+    { tag: `@${userName}`, id: userID }
+  ],
+  attachment: fs.createReadStream(outPath)
 };
 
-module.exports.run = async function({ api, event }) {
-  const fs = require("fs");
-  const path = require("path");
-  const { threadID } = event;
-  
-  const botPrefix = global.config.PREFIX || "/";
-  const botName = global.config.BOTNAME || "𝗦𝗵𝗮𝗵𝗮𝗱𝗮𝘁 𝗖𝗵𝗮𝘁 𝗕𝗼𝘁";
-
- 
-  if (event.logMessageData.addedParticipants.some(i => i.userFbId == api.getCurrentUserID())) {
-    await api.changeNickname(`[ ${botPrefix} ] • ${botName}`, threadID, api.getCurrentUserID());
-
-    api.sendMessage("চ্ঁলে্ঁ এ্ঁসে্ঁছি্ঁ 𝐒𝐡𝐚𝐡𝐚𝐝𝐚𝐭 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭 এঁখঁনঁ তোঁমাঁদেঁরঁ সাঁথেঁ আঁড্ডাঁ দিঁবঁ..!", threadID, () => {
-      const randomGifPath = path.join(__dirname, "cache", "randomgif");
-      const allFiles = fs.readdirSync(randomGifPath).filter(file =>
-        [".mp4", ".jpg", ".png", ".jpeg", ".gif", ".mp3"].some(ext => file.endsWith(ext))
-      );
-
-      const selected = allFiles.length > 0 
-        ? fs.createReadStream(path.join(randomGifPath, allFiles[Math.floor(Math.random() * allFiles.length)])) 
-        : null;
-
-      const messageBody = `╭•┄┅═══❁🌺❁═══┅┄•╮
-     আ্ঁস্ঁসা্ঁলা্ঁমু্ঁ💚আ্ঁলা্ঁই্ঁকু্ঁম্ঁ
-╰•┄┅═══❁🌺❁═══┅┄•╯
-
-𝐓𝐡𝐚𝐧𝐤 𝐲𝐨𝐮 𝐬𝐨 𝐦𝐮𝐜𝐡 𝐟𝐨𝐫 𝐚𝐝𝐝𝐢𝐧𝐠 𝐦𝐞 𝐭𝐨 𝐲𝐨𝐮𝐫 𝐢-𝐠𝐫𝐨𝐮𝐩-🖤🤗
-𝐈 𝐰𝐢𝐥𝐥 𝐚𝐥𝐰𝐚𝐲𝐬 𝐬𝐞𝐫𝐯𝐞 𝐲𝐨𝐮 𝐢𝐧𝐚𝐡𝐚𝐥𝐥𝐚𝐡 🌺❤️
-
-𝐓𝐨 𝐯𝐢𝐞𝐰 𝐚𝐧𝐲 𝐜𝐨𝐦𝐦𝐚𝐧𝐝:
-${botPrefix}Help
-${botPrefix}Info
-${botPrefix}Admin
-
-★ যেকোনো অভিযোগ অথবা হেল্প এর জন্য এডমিন 𝐒𝐡𝐚𝐡𝐚𝐝𝐚𝐭 কে নক করতে পারেন ★
-➤𝐌𝐞𝐬𝐬𝐞𝐧𝐠𝐞𝐫: https://m.me/100001039692046
-➤𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩: https://wa.me/100001039692046
-
-❖⋆═══════════════════════⋆❖
-          𝐁𝐨𝐭 𝐎𝐰𝐧𝐞𝐫 ➢ 𝐒𝐇𝐀𝐇𝐀𝐃𝐀𝐓 𝐒𝐀𝐇𝐔`;
-
-      if (selected) {
-        api.sendMessage({ body: messageBody, attachment: selected }, threadID);
-      } else {
-        api.sendMessage(messageBody, threadID);
-      }
+    api.sendMessage(message, threadID, () => {
+      fs.unlinkSync(bgPath);
+      fs.unlinkSync(avatarPath);
+      fs.unlinkSync(outPath);
     });
 
-    return;
-  }
-
- 
-  try {
-    const { createReadStream, readdirSync } = global.nodemodule["fs-extra"];
-    let { threadName, participantIDs } = await api.getThreadInfo(threadID);
-    const threadData = global.data.threadData.get(parseInt(threadID)) || {};
-    let mentions = [], nameArray = [], memLength = [], i = 0;
-
-    for (let id in event.logMessageData.addedParticipants) {
-      const userName = event.logMessageData.addedParticipants[id].fullName;
-      nameArray.push(userName);
-      mentions.push({ tag: userName, id });
-      memLength.push(participantIDs.length - i++);
-    }
-    memLength.sort((a, b) => a - b);
-
-    let msg = (typeof threadData.customJoin === "undefined") ? `╭•┄┅═══❁🌺❁═══┅┄•╮
-     আ্ঁস্ঁসা্ঁলা্ঁমু্ঁ💚আ্ঁলা্ঁই্ঁকু্ঁম্ঁ
-╰•┄┅═══❁🌺❁═══┅┄•╯
-হাসি, মজা, ঠাট্টায় গড়ে উঠুক  
-চিরস্থায়ী বন্ধুত্বের বন্ধন।🥰
-ভালোবাসা ও সম্পর্ক থাকুক আজীবন।💝
-
-➤ আশা করি আপনি এখানে হাসি-মজা করে 
-আড্ডা দিতে ভালোবাসবেন।😍
-➤ সবার সাথে মিলেমিশে থাকবেন।😉
-➤ উস্কানিমূলক কথা বা খারাপ ব্যবহার করবেন না।🚫
-➤ গ্রুপ এডমিনের কথা শুনবেন ও রুলস মেনে চলবেন।✅
-
-›› প্রিয় {name},  
-আপনি এই গ্রুপের {soThanhVien} নম্বর মেম্বার!
-
-›› গ্রুপ: {threadName}
-
-💌 🌺 𝐖 𝐄 𝐋 𝐂 𝐎 𝐌 𝐄 🌺 💌
-╭─╼╾─╼🌸╾─╼╾───╮
-   ─꯭─⃝‌‌𝐒𝐡𝐚𝐡𝐚𝐝𝐚𝐭 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭 🌺
-╰───╼╾─╼🌸╾─╼╾─╯
-
-❖⋆══════════════════════════⋆❖` : threadData.customJoin;
-
-    msg = msg
-      .replace(/\{name}/g, nameArray.join(', '))
-      .replace(/\{soThanhVien}/g, memLength.join(', '))
-      .replace(/\{threadName}/g, threadName);
-
-    const joinGifPath = path.join(__dirname, "cache", "joinGif");
-    const files = readdirSync(joinGifPath).filter(file =>
-      [".mp4", ".jpg", ".png", ".jpeg", ".gif", ".mp3"].some(ext => file.endsWith(ext))
-    );
-    const randomFile = files.length > 0 
-      ? createReadStream(path.join(joinGifPath, files[Math.floor(Math.random() * files.length)])) 
-      : null;
-
-    return api.sendMessage(
-      randomFile ? { body: msg, attachment: randomFile, mentions } : { body: msg, mentions },
-      threadID
-    );
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error("Joinnoti error:", error);
+    api.sendMessage("𝐖𝐄𝐋𝐂𝐎𝐌𝐄 𝐓𝐲𝐩𝐞 !𝐡𝐞𝐥𝐩 𝐟𝐨𝐫 𝐚𝐥𝐥 𝐜𝐨𝐦𝐦𝐚𝐧𝐝𝐬 ⚙️", threadID);
   }
 };
