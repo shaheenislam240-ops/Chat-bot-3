@@ -59,4 +59,4 @@ module.exports = function ({ Users, Threads, Currencies }) {
             return console.log(err);
         }
     };
-}
+                    }
