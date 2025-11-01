@@ -1,66 +1,53 @@
+const moment = require("moment-timezone");
+const fs = require("fs");
+const path = require("path");
+
 module.exports.config = {
   name: "prefix",
-  version: "1.0.0", 
+  version: "1.0.0",
   hasPermssion: 0,
-  credits: "Shahadat SAHU",
-  description: "Display the bot's prefix and owner info",
-  commandCategory: "Information",
+  credits: "Rx Modified",
+  description: "Show bot prefix info without using any prefix",
+  commandCategory: "system",
   usages: "",
-  cooldowns: 5
+  cooldowns: 5,
+  usePrefix: false // ⭐⭐ Main part: no prefix needed
 };
 
-module.exports.handleEvent = async ({ event, api, Threads }) => {
-  var { threadID, messageID, body } = event;
+module.exports.handleEvent = async function ({ api, event }) {
+  const { threadID, messageID, body } = event;
   if (!body) return;
 
-  var dataThread = await Threads.getData(threadID);
-  var data = dataThread.data || {};
-  const threadSetting = global.data.threadData.get(parseInt(threadID)) || {};
-  const prefix = threadSetting.PREFIX || global.config.PREFIX;
-  const groupName = dataThread.threadInfo?.threadName || "Unnamed Group";
+  if (body.toLowerCase().trim() === "prefix") {
+    const ping = Date.now() - event.timestamp;
+    const day = moment.tz("Asia/Dhaka").format("dddd");
 
-  const triggerWords = [
-    "prefix", "mprefix", "mpre", "bot prefix", "what is the prefix", "bot name",
-    "how to use bot", "bot not working", "bot is offline", "prefx", "prfix",
-    "perfix", "bot not talking", "where is bot", "bot dead", "bots dead",
-    "dấu lệnh", "daulenh", "what prefix", "freefix", "what is bot", "what prefix bot",
-    "how use bot", "where are the bots", "where prefix"
-  ];
+    // Get prefixes or set defaults
+    const BOTPREFIX = global.config.PREFIX || "!";
+    const GROUPPREFIX = global.data.threadData?.[threadID]?.prefix || BOTPREFIX;
 
-  let lowerBody = body.toLowerCase();
-  if (triggerWords.includes(lowerBody)) {
+    const BOTNAME = global.config.BOTNAME || "𝐒𝐚𝐬𝐮𝐤𝐞 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭";
+
+    const msg =
+`◇───✦ 𝗣𝗥𝗘𝗙𝗜𝗫 𝗦𝗧𝗔𝗧𝗨𝗦 ✦───◇
+• 𝗣𝗶𝗻𝗴: ${ping}ms
+• 𝗗𝗮𝘆: ${day}
+• 𝗕𝗼𝘁 𝗡𝗮𝗺𝗲: ${BOTNAME}
+• 𝗕𝗼𝘁 𝗣𝗿𝗲𝗳𝗶𝘅: ${BOTPREFIX}
+• 𝗚𝗿𝗼𝘂𝗽 𝗣𝗿𝗲𝗳𝗶𝘅: ${GROUPPREFIX}
+◇────────────────◇`;
+
+    const gifPath = path.join(__dirname, "noprefix", "abdullah.gif");
+
     return api.sendMessage(
-`🌟━━━━━━━━━━━━━━━━━🌟
-　　　『 𝐏𝐑𝐄𝐅𝐈𝐗 𝐈𝐍𝐅𝐎𝐑𝐌𝐀𝐓𝐈𝐎𝐍 』
-🌟━━━━━━━━━━━━━━━━━🌟
-『 𝐁𝐎𝐓 𝐈𝐍𝐅𝐎 』
-
-➤ 𝗕𝗼𝘁 𝗽𝗿𝗲𝗳𝗶𝘅 : [ ${prefix} ]
-➤ 𝗕𝗼𝘁 𝗡𝗮𝗺𝗲   : ─꯭─⃝‌‌𝐒𝐡𝐚𝐡𝐚𝐝𝐚𝐭 𝐂𝐡𝐚𝐭 𝐁𝐨𝐓
-➤ 𝗕𝗼𝘁 𝗔𝗱𝗺𝗶𝗻 : 𝐒𝐇𝐀𝐇𝐀𝐃𝐀𝐓
-
-『 𝐁𝐎𝐗 𝐈𝐍𝐅𝐎 』
-
-➤ 𝗕𝗼𝘅 𝗣𝗿𝗲𝗳𝗶𝘅 : ${prefix}
-➤ 𝗕𝗼𝘅 𝗡𝗮𝗺𝗲   : ${groupName}
-➤ 𝗕𝗼𝘅 𝗧𝗜𝗗     : ${threadID}
-
-『 𝐎𝐖𝐍𝐄𝐑 𝐈𝐍𝐅𝐎 』
-
-➤ 𝗢𝘄𝗻𝗲𝗿 𝗡𝗮𝗺𝗲 : 𝐒𝐇𝐀𝐇𝐀𝐃𝐀𝐓 𝐒𝐀𝐇𝐔
-➤ 𝗙𝗮𝗰𝗲𝗯𝗼𝗼𝗸    : www.facebook.com/100001039692046
-➤ 𝗠𝗲𝘀𝘀𝗲𝗻𝗴𝗲𝗿  : m.me/100001039692046
-➤ 𝗪𝗵𝗮𝘁𝘀𝗔𝗽𝗽    : https://wa.me/+8801882333052
-
-🌟━━━━━━━━━━━━━━━━━🌟
-　　　　𝗧𝗵𝗮𝗻𝗸 𝗬𝗼𝘂 𝗙𝗼𝗿 𝗨𝘀𝗶𝗻𝗴!
-🌟━━━━━━━━━━━━━━━━━🌟`,
+      {
+        body: msg,
+        attachment: fs.createReadStream(gifPath)
+      },
       threadID,
-      null
+      messageID
     );
   }
 };
 
-module.exports.run = async ({ event, api }) => {
-  return api.sendMessage("Type 'prefix' or similar to get the bot info.", event.threadID);
-};
+module.exports.run = async () => {};
