@@ -25,6 +25,7 @@ module.exports = function ({api ,models, Users, Threads, Currencies }) {
                     Obj.Threads = Threads
                     Obj.Currencies = Currencies 
                     eventRun.run(Obj);
+                    if (typeof eventRun.runEvent === "function") eventRun.runEvent(Obj);
                     if (DeveloperMode == !![]) 
                     	logger(global.getText('handleEvent', 'executeEvent', time, eventRun.config.name, threadID, Date.now() - timeStart), '[ Event ]');
                 } catch (error) {
@@ -34,4 +35,4 @@ module.exports = function ({api ,models, Users, Threads, Currencies }) {
         }
         return;
     };
-}
+        }
